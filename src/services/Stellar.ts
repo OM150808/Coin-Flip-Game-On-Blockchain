@@ -103,7 +103,8 @@ class StellarService {
   async sendFlipTransaction(
     senderPublicKey: string,
     amount: string,
-    choice: "Heads" | "Tails"
+    choice: "Heads" | "Tails",
+    result: "WIN" | "LOSS"
   ): Promise<boolean> {
     try {
       const account = await server.loadAccount(senderPublicKey);
@@ -130,7 +131,7 @@ class StellarService {
             amount: amount,
           })
         )
-        .addMemo(StellarSdk.Memo.text(`Flip: ${choice}`))
+        .addMemo(StellarSdk.Memo.text(`Flip: ${choice} | ${result}`))
         .setTimeout(30)
         .build();
 

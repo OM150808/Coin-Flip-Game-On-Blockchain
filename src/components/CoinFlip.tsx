@@ -19,10 +19,12 @@ const CoinFlip: React.FC<CoinFlipProps> = ({ onFlip, isFlipping, result, publicK
 
   return (
     <div className="coin-flip-card glass">
-      <div className="coin-wrapper">
-        <div className={`coin ${isFlipping ? "flipping" : ""} ${result ? result.toLowerCase() : ""}`}>
-          <div className="side heads">H</div>
-          <div className="side tails">T</div>
+      <div className="glitch-wrapper">
+        <div 
+          className={`glitch-content ${isFlipping ? "flipping" : ""}`}
+          data-text={isFlipping ? "???" : (result || choice).toUpperCase()}
+        >
+          {isFlipping ? "???" : (result || choice).toUpperCase()}
         </div>
       </div>
 

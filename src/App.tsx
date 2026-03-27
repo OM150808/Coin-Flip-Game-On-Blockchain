@@ -82,35 +82,40 @@ const App: React.FC = () => {
         setIsFlipping(true);
         setResult(undefined);
 
-        // Submission to Stellar
-        const success = await stellar.sendFlipTransaction(publicKey, amount, choice);
+        // 1. Simulate game outcome FIRST (animation period)
+        await new Promise(resolve => setTimeout(resolve, 3000)); 
+        const outcome = Math.random() > 0.5 ? "Heads" : "Tails";
+        const isWin = outcome === choice;
+        
+        setResult(outcome);
 
-        // Simulate game outcome (since we're using a simple payment for demo)
-        // In Soroban, the contract would decide.
-        await new Promise(resolve => setTimeout(resolve, 3000)); // Animation time
-
-        if (success) {
-            const outcome = Math.random() > 0.5 ? "Heads" : "Tails";
-            setResult(outcome);
+        if (isWin) {
+            // 2a. User WON - No deduction, just update stats
+            console.log("Win detected - skipping transaction.");
+            setStats(s => ({ ...s, wins: s.wins + 1 }));
             
-            const isWin = outcome === choice;
-            if (isWin) {
-                setStats(s => ({ ...s, wins: s.wins + 1 }));
-            } else {
-                setStats(s => ({ ...s, losses: s.losses + 1 }));
-            }
-
-            // Fetch history immediately to get the new transaction hash
-            const newHistory = await stellar.getTransactionHistory(publicKey);
-            if (newHistory.length > 0) {
-              const latestTx = newHistory[0];
-              setOutcomes(prev => ({ ...prev, [latestTx.id]: isWin ? "WIN" : "LOSS" }));
-            }
-            
-            setHistory(newHistory);
+            // Still fetch balance/history to ensure UI is in sync
             updateBalance(publicKey);
+            updateHistory(publicKey);
         } else {
-            alert("Transaction failed or rejected.");
+            // 2b. User LOST - Deduct amount (submit to Stellar)
+            console.log("Loss detected - requesting payment...");
+            const success = await stellar.sendFlipTransaction(publicKey, amount, choice, "LOSS");
+            
+            if (success) {
+                setStats(s => ({ ...s, losses: s.losses + 1 }));
+                
+                // Fetch history to see the new loss record
+                const newHistory = await stellar.getTransactionHistory(publicKey);
+                if (newHistory.length > 0) {
+                    const latestTx = newHistory[0];
+                    setOutcomes(prev => ({ ...prev, [latestTx.id]: "LOSS" }));
+                    setHistory(newHistory);
+                }
+                updateBalance(publicKey);
+            } else {
+                alert("Transaction failed or rejected. Loss not recorded.");
+            }
         }
 
         setIsFlipping(false);
