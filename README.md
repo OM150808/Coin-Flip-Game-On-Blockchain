@@ -46,17 +46,17 @@ To run this project locally, follow these steps:
 
 5. **Screenshots**:
 ### Home page
-![alt text](imgs\Dark_Home_Page.png) 
-![alt text](imgs\Light_Home_Page.png)
+![alt text](imgs/Dark_Home_Page.png) 
+![alt text](imgs/Light_Home_Page.png)
 
 ### Wallet Connected State & Balance Displayed
-![alt text](imgs\Wallet_Connected_State_&_Balance_Displayed.png)
+![alt text](imgs/Wallet_Connected_State_&_Balance_Displayed.png)
 
 ### Successful Testnet Transaction
-![alt text](imgs\Successful_Testnet_Transaction.png)
+![alt text](imgs/Successful_Testnet_Transaction.png)
 
 ### Transaction Result Shown to User
-![alt text](imgs\Transaction_Result_Shown_to_User.png)
+![alt text](imgs/Transaction_Result_Shown_to_User.png)
 
 ---
 *Built with ❤️ on Stellar.*
