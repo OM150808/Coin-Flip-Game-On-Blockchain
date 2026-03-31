@@ -44,21 +44,19 @@ To run this project locally, follow these steps:
 - Ensure your Freighter wallet is set to **Testnet**.
 - Make sure you have some Testnet XLM use the [Stellar Laboratory Friendbot](https://laboratory.stellar.org/#account-creator?network=testnet).
 
-## Screenshots
+5. **Screenshots**:
+### Home page
+![alt text](imgs\Dark_Home_Page.png) 
+![alt text](imgs\Light_Home_Page.png)
 
-![alt text](screencapture-localhost-5173-2026-03-27-12_27_46.png) ![alt text](screencapture-localhost-5173-2026-03-27-12_27_27.png)
-
-### Wallet Connected State
-![alt text](<Screenshot 2026-03-27 122145.png>)
-
-### Balance Displayed
-![alt text](<Screenshot 2026-03-27 122211.png>)
+### Wallet Connected State & Balance Displayed
+![alt text](imgs\Wallet_Connected_State_&_Balance_Displayed.png)
 
 ### Successful Testnet Transaction
-![alt text](<Screenshot 2026-03-27 122345.png>)
+![alt text](imgs\Successful_Testnet_Transaction.png)
 
 ### Transaction Result Shown to User
-
+![alt text](imgs\Transaction_Result_Shown_to_User.png)
 
 ---
 *Built with ❤️ on Stellar.*
