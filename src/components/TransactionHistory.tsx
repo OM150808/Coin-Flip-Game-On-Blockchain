@@ -18,7 +18,15 @@ const TransactionHistory: React.FC<HistoryProps> = ({ transactions, outcomes }) 
           transactions.map((tx) => (
             <div key={tx.id} className="tx-row">
               <div className="tx-header">
-                <span className="tx-hash">#{tx.id.slice(0, 12)}...</span>
+                <a
+                  className="tx-hash"
+                  href={`https://stellar.expert/explorer/testnet/tx/${tx.hash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={tx.hash}
+                >
+                  #{tx.hash.slice(0, 10)}... ↗
+                </a>
                 <div className="tx-badges">
                   {outcomes[tx.id] && (
                     <span className={`tx-badge ${outcomes[tx.id].toLowerCase()}`}>
@@ -31,7 +39,7 @@ const TransactionHistory: React.FC<HistoryProps> = ({ transactions, outcomes }) 
                 </div>
               </div>
               <div className="tx-info">
-                <span className="tx-memo">{tx.memo}</span>
+                <span className="tx-memo">{tx.memo || "—"}</span>
                 <span className="tx-time">{new Date(tx.createdAt).toLocaleTimeString()}</span>
               </div>
             </div>

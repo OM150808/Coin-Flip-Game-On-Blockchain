@@ -41,6 +41,7 @@
 .main-content {
   display: grid;
   grid-template-columns: 1fr 300px;
+  grid-template-rows: auto auto;
   gap: 40px;
 }
 
@@ -49,6 +50,117 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Transaction Feedback Panel ── */
+.tx-feedback-panel {
+  grid-column: 1 / -1;
+  border: 1px solid var(--border-color);
+  padding: 18px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: fadeSlideIn 0.3s ease;
+}
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.tx-feedback-panel.win {
+  border-color: rgba(52, 211, 153, 0.5);
+  background: rgba(52, 211, 153, 0.04);
+}
+
+.tx-feedback-panel.loss {
+  border-color: rgba(248, 113, 113, 0.5);
+  background: rgba(248, 113, 113, 0.04);
+}
+
+.tx-feedback-panel.error {
+  border-color: rgba(251, 191, 36, 0.5);
+  background: rgba(251, 191, 36, 0.04);
+}
+
+.tx-feedback-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tx-feedback-status {
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+}
+
+.tx-feedback-panel.win .tx-feedback-status { color: #34d399; }
+.tx-feedback-panel.loss .tx-feedback-status { color: #f87171; }
+.tx-feedback-panel.error .tx-feedback-status { color: #fbbf24; }
+
+.tx-feedback-badge {
+  font-size: 10px;
+  padding: 2px 8px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+}
+
+.tx-feedback-panel.win .tx-feedback-badge { color: #34d399; }
+.tx-feedback-panel.loss .tx-feedback-badge { color: #f87171; }
+.tx-feedback-panel.error .tx-feedback-badge { color: #fbbf24; }
+
+.tx-feedback-detail {
+  display: flex;
+  gap: 16px;
+  align-items: baseline;
+}
+
+.tx-feedback-label {
+  color: var(--text-secondary);
+  min-width: 80px;
+  font-size: 10px;
+}
+
+.tx-feedback-val {
+  color: var(--text-primary);
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.tx-feedback-hash {
+  color: var(--text-primary);
+  font-weight: 500;
+  text-decoration: none;
+  border-bottom: 1px dashed var(--text-secondary);
+  word-break: break-all;
+  transition: var(--transition);
+}
+
+.tx-feedback-hash:hover {
+  border-bottom-color: var(--text-primary);
+  opacity: 0.8;
+}
+
+.tx-feedback-link-icon {
+  font-size: 10px;
+  vertical-align: super;
+}
+
+.tx-feedback-close {
+  align-self: flex-start;
+  margin-top: 4px;
+  font-size: 10px;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  padding: 3px 10px;
+}
+
+.tx-feedback-close:hover {
+  color: var(--text-primary);
+  border-color: var(--text-primary);
+  opacity: 1;
+}
+
 
 .wallet-info {
   display: flex;

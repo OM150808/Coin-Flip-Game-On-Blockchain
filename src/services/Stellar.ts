@@ -23,10 +23,17 @@ const rotateServer = () => {
 
 export interface TransactionRecord {
   id: string;
+  hash: string;
   amount: string;
   memo: string;
   createdAt: string;
   successful: boolean;
+}
+
+export interface FlipResult {
+  success: boolean;
+  hash?: string;
+  error?: string;
 }
 
 class StellarService {
@@ -104,20 +111,13 @@ class StellarService {
     senderPublicKey: string,
     amount: string,
     choice: "Heads" | "Tails",
-    result: "WIN" | "LOSS"
-  ): Promise<boolean> {
+    outcome: "WIN" | "LOSS"
+  ): Promise<FlipResult> {
     try {
       const account = await server.loadAccount(senderPublicKey);
-      
-      // For a real "Coin Flip" game, you'd usually have a smart contract (Soroban)
-      // or a service that takes the bet and pays out.
-      // Here, we'll simulate it by sending a transaction to a "game address" 
-      // or just a self-transaction with a memo.
-      // Since we want "Complete code", we'll simulate the "game result" 
-      // based on the transaction hash or a random value.
-      
-      // Destination: For simulate a bet, we send it to the house.
-      const destination = this.houseAddress; 
+
+      // Send the bet amount to the house address as proof-of-play on Testnet
+      const destination = this.houseAddress;
 
       console.log("Building transaction for network:", this.networkPassphrase);
       const transaction = new StellarSdk.TransactionBuilder(account, {
@@ -131,46 +131,55 @@ class StellarService {
             amount: amount,
           })
         )
-        .addMemo(StellarSdk.Memo.text(`Flip: ${choice} | ${result}`))
+        .addMemo(StellarSdk.Memo.text(`Flip:${choice[0]}|${outcome}`))
         .setTimeout(30)
         .build();
 
       const xdr = transaction.toXDR();
-      console.log("Transaction XDR created, sending to Freighter with network:", this.networkPassphrase);
+      console.log("Transaction XDR created, sending to Freighter...");
 
       const signedXdr = await signTransaction(xdr, {
         networkPassphrase: this.networkPassphrase,
       });
 
       console.log("Transaction signed by Freighter.");
-      try {
-        const result = await server.submitTransaction(
-          StellarSdk.TransactionBuilder.fromXDR(signedXdr, this.networkPassphrase)
-        );
-        console.log("Transaction submitted successfully:", result.hash);
-        return true;
-      } catch (err: any) {
-        console.error("Submission failed:", err);
-        if (err.response?.data?.extras?.result_codes) {
-          console.error("Horizon Result Codes:", err.response.data.extras.result_codes);
-        }
-        if (err.message && (err.message.includes("Network Error") || err.message.includes("ERR_NAME_NOT_RESOLVED"))) {
-          rotateServer();
-          console.log("Retrying submission with fallback node...");
-          try {
-            await server.submitTransaction(
-              StellarSdk.TransactionBuilder.fromXDR(signedXdr, this.networkPassphrase)
-            );
-            return true;
-          } catch (retryErr) {
-            console.error("Submission retry failed:", retryErr);
+
+      const submitTx = async (xdrStr: string): Promise<FlipResult> => {
+        try {
+          const submitted = await server.submitTransaction(
+            StellarSdk.TransactionBuilder.fromXDR(xdrStr, this.networkPassphrase)
+          );
+          console.log("Transaction submitted successfully:", submitted.hash);
+          return { success: true, hash: submitted.hash };
+        } catch (err: any) {
+          console.error("Submission failed:", err);
+          if (err.response?.data?.extras?.result_codes) {
+            console.error("Horizon Result Codes:", err.response.data.extras.result_codes);
           }
+          const isNetworkErr =
+            err.message &&
+            (err.message.includes("Network Error") || err.message.includes("ERR_NAME_NOT_RESOLVED"));
+          if (isNetworkErr) {
+            rotateServer();
+            console.log("Retrying submission with fallback node...");
+            try {
+              const retried = await server.submitTransaction(
+                StellarSdk.TransactionBuilder.fromXDR(xdrStr, this.networkPassphrase)
+              );
+              return { success: true, hash: retried.hash };
+            } catch (retryErr: any) {
+              console.error("Submission retry failed:", retryErr);
+              return { success: false, error: retryErr?.message ?? "Retry failed" };
+            }
+          }
+          return { success: false, error: err?.message ?? "Submission failed" };
         }
-        return false;
-      }
-    } catch (error) {
+      };
+
+      return submitTx(signedXdr);
+    } catch (error: any) {
       console.error("Transaction flow error:", error);
-      return false;
+      return { success: false, error: error?.message ?? "Transaction failed" };
     }
   }
 
@@ -182,10 +191,11 @@ class StellarService {
         .order("desc")
         .limit(10)
         .call();
-      
+
       return response.records.map(record => ({
         id: record.id,
-        amount: "", // Payment info would require loading operations
+        hash: record.hash,
+        amount: "",
         memo: record.memo || "",
         createdAt: record.created_at,
         successful: record.successful,
@@ -200,9 +210,10 @@ class StellarService {
             .order("desc")
             .limit(10)
             .call();
-          
+
           return response.records.map(record => ({
             id: record.id,
+            hash: record.hash,
             amount: "",
             memo: record.memo || "",
             createdAt: record.created_at,

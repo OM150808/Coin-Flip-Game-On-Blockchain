@@ -14,6 +14,13 @@ const App: React.FC = () => {
     const [time, setTime] = useState(new Date());
     const [stats, setStats] = useState({ wins: 0, losses: 0 });
     const [outcomes, setOutcomes] = useState<Record<string, "WIN" | "LOSS">>({});
+    const [txFeedback, setTxFeedback] = useState<{
+        hash: string;
+        outcome: "WIN" | "LOSS";
+        choice: string;
+        amount: string;
+    } | null>(null);
+    const [txError, setTxError] = useState<string | null>(null);
 
     useEffect(() => {
         const timer = setInterval(() => setTime(new Date()), 1000);
@@ -81,41 +88,41 @@ const App: React.FC = () => {
 
         setIsFlipping(true);
         setResult(undefined);
+        setTxFeedback(null);
+        setTxError(null);
 
-        // 1. Simulate game outcome FIRST (animation period)
-        await new Promise(resolve => setTimeout(resolve, 3000)); 
-        const outcome = Math.random() > 0.5 ? "Heads" : "Tails";
-        const isWin = outcome === choice;
-        
-        setResult(outcome);
+        // 1. Determine outcome locally (simulated randomness for Level 1)
+        const coinResult: "Heads" | "Tails" = Math.random() > 0.5 ? "Heads" : "Tails";
+        const isWin = coinResult === choice;
+        const outcome: "WIN" | "LOSS" = isWin ? "WIN" : "LOSS";
 
-        if (isWin) {
-            // 2a. User WON - No deduction, just update stats
-            console.log("Win detected - skipping transaction.");
-            setStats(s => ({ ...s, wins: s.wins + 1 }));
-            
-            // Still fetch balance/history to ensure UI is in sync
-            updateBalance(publicKey);
-            updateHistory(publicKey);
-        } else {
-            // 2b. User LOST - Deduct amount (submit to Stellar)
-            console.log("Loss detected - requesting payment...");
-            const success = await stellar.sendFlipTransaction(publicKey, amount, choice, "LOSS");
-            
-            if (success) {
-                setStats(s => ({ ...s, losses: s.losses + 1 }));
-                
-                // Fetch history to see the new loss record
-                const newHistory = await stellar.getTransactionHistory(publicKey);
-                if (newHistory.length > 0) {
-                    const latestTx = newHistory[0];
-                    setOutcomes(prev => ({ ...prev, [latestTx.id]: "LOSS" }));
-                    setHistory(newHistory);
-                }
-                updateBalance(publicKey);
+        // 2. Animate the flip (show spinning state for 2.5s)
+        await new Promise(resolve => setTimeout(resolve, 2500));
+        setResult(coinResult);
+
+        // 3. Always submit a transaction to Stellar Testnet as proof-of-play
+        const flipTx = await stellar.sendFlipTransaction(publicKey, amount, choice, outcome);
+
+        if (flipTx.success && flipTx.hash) {
+            // 4a. Success — show tx hash feedback
+            setTxFeedback({ hash: flipTx.hash, outcome, choice, amount });
+
+            if (isWin) {
+                setStats(s => ({ ...s, wins: s.wins + 1 }));
             } else {
-                alert("Transaction failed or rejected. Loss not recorded.");
+                setStats(s => ({ ...s, losses: s.losses + 1 }));
             }
+
+            // 5. Refresh balance and history
+            const newHistory = await stellar.getTransactionHistory(publicKey);
+            if (newHistory.length > 0) {
+                setOutcomes(prev => ({ ...(prev ?? {}), [newHistory[0].id]: outcome }));
+                setHistory(newHistory);
+            }
+            updateBalance(publicKey);
+        } else {
+            // 4b. Transaction failed or was rejected
+            setTxError(flipTx.error ?? "Transaction was rejected or failed. Please try again.");
         }
 
         setIsFlipping(false);
@@ -187,7 +194,59 @@ const App: React.FC = () => {
                     publicKey={publicKey}
                     balance={balance}
                 />
-                <TransactionHistory transactions={history} outcomes={outcomes} />
+
+                {/* Transaction Feedback Panel */}
+                {txFeedback && (
+                    <div className={`tx-feedback-panel ${txFeedback.outcome === "WIN" ? "win" : "loss"}`}>
+                        <div className="tx-feedback-header">
+                            <span className="tx-feedback-status">
+                                {txFeedback.outcome === "WIN" ? "✓ WIN CONFIRMED" : "✗ LOSS RECORDED"}
+                            </span>
+                            <span className="tx-feedback-badge">
+                                {txFeedback.outcome === "WIN" ? "TX_OK" : "TX_OK"}
+                            </span>
+                        </div>
+                        <div className="tx-feedback-detail">
+                            <span className="tx-feedback-label">CHOICE:</span>
+                            <span className="tx-feedback-val">{txFeedback.choice.toUpperCase()} | {txFeedback.amount} XLM</span>
+                        </div>
+                        <div className="tx-feedback-detail">
+                            <span className="tx-feedback-label">TX_HASH:</span>
+                            <a
+                                className="tx-feedback-hash"
+                                href={`https://stellar.expert/explorer/testnet/tx/${txFeedback.hash}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="View on Stellar Expert"
+                            >
+                                {txFeedback.hash.slice(0, 16)}...{txFeedback.hash.slice(-8)}
+                                <span className="tx-feedback-link-icon"> ↗</span>
+                            </a>
+                        </div>
+                        <div className="tx-feedback-detail">
+                            <span className="tx-feedback-label">NETWORK:</span>
+                            <span className="tx-feedback-val">STELLAR_TESTNET</span>
+                        </div>
+                        <button className="tx-feedback-close" onClick={() => setTxFeedback(null)}>DISMISS</button>
+                    </div>
+                )}
+
+                {/* Transaction Error Panel */}
+                {txError && (
+                    <div className="tx-feedback-panel error">
+                        <div className="tx-feedback-header">
+                            <span className="tx-feedback-status">✗ TRANSACTION FAILED</span>
+                            <span className="tx-feedback-badge">TX_ERR</span>
+                        </div>
+                        <div className="tx-feedback-detail">
+                            <span className="tx-feedback-label">REASON:</span>
+                            <span className="tx-feedback-val">{txError}</span>
+                        </div>
+                        <button className="tx-feedback-close" onClick={() => setTxError(null)}>DISMISS</button>
+                    </div>
+                )}
+
+                <TransactionHistory transactions={history} outcomes={outcomes ?? {}} />
             </main>
 
             <footer className="footer">
